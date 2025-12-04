@@ -1119,10 +1119,15 @@ const conv = tool.conversations[tool.currentIndex];
 if (!conv || conv.length === 0) return;
 const convId = conv[0].Id;
 const isAnn = tool.annotations[convId] && Object.keys(tool.annotations[convId]).length > 0;
-const lastMsg = conv[conv.length - 1];
-
+let customerFeedback = 'N/A';
+for (let msg of conv) {
+  if (msg['Customer Feedback'] && msg['Customer Feedback'].trim()) {
+    customerFeedback = msg['Customer Feedback'];
+    break;
+  }
+}
 elements.conversationInfo.innerHTML = `<div><strong>ID:</strong> ${convId}</div>
-<div><strong>Feedback:</strong> <span class="badge ${lastMsg['Customer Feedback']?.toLowerCase() === 'negative' ? 'badge-danger' : 'badge-success'}">${lastMsg['Customer Feedback'] || 'N/A'}</span></div>`;
+<div><strong>Feedback:</strong> <span class="badge ${customerFeedback?.toLowerCase() === 'negative' ? 'badge-danger' : 'badge-success'}">${customerFeedback}</span></div>`;
 elements.annotationStatus.innerHTML = `<div class="status-indicator ${isAnn ? 'status-annotated' : 'status-not-annotated'}">${isAnn ? '✓ Annotated' : ' Not Annotated'}</div>`;
 
 let html = '';
@@ -1404,12 +1409,19 @@ tool.conversations.forEach(conv => {
 const cid = conv[0].Id;
 const ann = tool.annotations[cid];
 if (ann && Object.keys(ann).length > 0) {
-conv.forEach(m => {
+let feedback = '';
+for (let msg of conv) {
+  if (msg['Customer Feedback'] && msg['Customer Feedback'].trim()) {
+    feedback = msg['Customer Feedback'];
+    break;
+  }
+}
+conv.forEach((m, idx) => {
 rows.push({
 'Id': m.Id, 'llmGeneratedUserMessage': m.llmGeneratedUserMessage || '', 'botMessage': m.botMessage || '',
 'Customer Feedback': m['Customer Feedback'] || '', 'Bot Response': ann['Bot Response'] || '',
 'HVA': ann['HVA'] || '', 'AB feature/HVA Related Query': ann['AB feature/HVA Related Query'] || '',
- 'HVA sub-intent': ann['HVA sub-intent'] || '',
+'HVA sub-intent': ann['HVA sub-intent'] || '',
 'Personalized/Account-Specific Queries': ann['Personalized/Account-Specific Queries'] || '',
 'Bot Limitations': ann['Bot Limitations'] || '',
 'Promo & Freebie Related Queries': ann['Promo & Freebie Related Queries'] || '',
@@ -1492,5 +1504,4 @@ checkActiveSession();
 </body>
 
 </html>
-
 
