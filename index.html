@@ -1120,10 +1120,30 @@ if (!conv || conv.length === 0) return;
 const convId = conv[0].Id;
 const isAnn = tool.annotations[convId] && Object.keys(tool.annotations[convId]).length > 0;
 let customerFeedback = 'N/A';
+let hasNegative = false;
+let hasPositive = false;
+
+// Check if conversation has both positive and negative feedback
 for (let msg of conv) {
-  if (msg['Customer Feedback'] && msg['Customer Feedback'].trim()) {
-    customerFeedback = msg['Customer Feedback'];
-    break;
+  const feedback = msg['Customer Feedback'] || msg['feedback'] || msg['Feedback'];
+  if (feedback && String(feedback).trim() && String(feedback).trim().toLowerCase() !== 'n/a') {
+    const feedbackLower = String(feedback).trim().toLowerCase();
+    if (feedbackLower === 'negative') hasNegative = true;
+    if (feedbackLower === 'positive') hasPositive = true;
+  }
+}
+
+// Prioritize negative feedback if both exist
+if (hasNegative && hasPositive) {
+  customerFeedback = 'Negative';
+} else {
+  // Otherwise, use the first valid feedback found
+  for (let msg of conv) {
+    const feedback = msg['Customer Feedback'] || msg['feedback'] || msg['Feedback'];
+    if (feedback && String(feedback).trim() && String(feedback).trim().toLowerCase() !== 'n/a') {
+      customerFeedback = String(feedback).trim();
+      break;
+    }
   }
 }
 elements.conversationInfo.innerHTML = `<div><strong>ID:</strong> ${convId}</div>
@@ -1409,17 +1429,12 @@ tool.conversations.forEach(conv => {
 const cid = conv[0].Id;
 const ann = tool.annotations[cid];
 if (ann && Object.keys(ann).length > 0) {
-let feedback = '';
-for (let msg of conv) {
-  if (msg['Customer Feedback'] && msg['Customer Feedback'].trim()) {
-    feedback = msg['Customer Feedback'];
-    break;
-  }
-}
 conv.forEach((m, idx) => {
+// Use the original feedback from each message
+const originalFeedback = m['Customer Feedback'] || m['feedback'] || m['Feedback'] || '';
 rows.push({
 'Id': m.Id, 'llmGeneratedUserMessage': m.llmGeneratedUserMessage || '', 'botMessage': m.botMessage || '',
-'Customer Feedback': m['Customer Feedback'] || '', 'Bot Response': ann['Bot Response'] || '',
+'Customer Feedback': originalFeedback, 'Bot Response': ann['Bot Response'] || '',
 'HVA': ann['HVA'] || '', 'AB feature/HVA Related Query': ann['AB feature/HVA Related Query'] || '',
 'HVA sub-intent': ann['HVA sub-intent'] || '',
 'Personalized/Account-Specific Queries': ann['Personalized/Account-Specific Queries'] || '',
@@ -1504,4 +1519,3 @@ checkActiveSession();
 </body>
 
 </html>
-
